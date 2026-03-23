@@ -1,0 +1,546 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Autonomous Surveillance Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Add Babel for in-browser JSX transpilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    select {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.5rem center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      padding-right: 2.5rem;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-900">
+  <div id="root"></div>
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://aistudiocdn.com/react@^18.2.0",
+      "react-dom/client": "https://aistudiocdn.com/react-dom@^18.2.0/client",
+      "@google/genai": "https://aistudiocdn.com/@google/genai@^1.25.0"
+    }
+  }
+  </script>
+  <!-- Change script type to text/babel for Babel to transpile it -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect } from 'react';
+    import ReactDOM from 'react-dom/client';
+    import { GoogleGenAI, Type } from "@google/genai";
+
+    // --- TRANSLATIONS ---
+    const translations = {
+      en: {
+        appTitle: 'AI Autonomous Surveillance Agent',
+        appSubtitle: 'Configure a mission and let the agent analyze the scene.',
+        analyzing: 'Agent is Analyzing...',
+        agentReport: 'Agent Report',
+        missionStatus: 'Mission Status:',
+        violation: 'VIOLATION',
+        ok: 'OK',
+        reason: 'Reason:',
+        sceneSummary: 'Scene Summary:',
+        detectedObjects: 'Detected Objects:',
+        controls: 'Controls',
+        uploadHeader: '1. Upload Security Image',
+        missionControlCenter: '2. Mission Control Center',
+        missionBlueprints: 'Mission Blueprints',
+        perimeterSecurity: 'Perimeter Security',
+        occupancyLimit: 'Occupancy Limit',
+        assetProtection: 'Asset Protection',
+        guidedBuilder: 'Guided Builder',
+        monitorFor: 'Monitor for...',
+        subjectPeople: 'People',
+        subjectVehicles: 'Vehicles',
+        subjectAnyObject: 'Any Object',
+        ruleIs: 'The rule is...',
+        ruleNotPresent: 'Should not be present',
+        ruleCountExceed: 'Count should not exceed...',
+        ruleOnlyBe: 'Should only be...',
+        maxCount: 'Max Count',
+        description: 'Description',
+        descriptionPlaceholder: "e.g., 'white service cars'",
+        generatedMission: 'Generated Mission:',
+        agentStatus: 'Agent Status',
+        active: 'ACTIVE',
+        inactive: 'INACTIVE',
+        runAnalysis: 'Run Agent Analysis',
+        analyzingBtn: 'Analyzing...',
+        activateAgentTooltip: 'Activate the agent to start analysis',
+        errorPrefix: 'Error:',
+        violationLog: 'Mission Violation Log',
+        noViolations: 'No mission violations recorded yet.',
+        configErrorTitle: 'Configuration Error',
+        configErrorBody: 'The application failed to start because the Gemini API key is missing from the environment.',
+        configErrorFooter: 'This needs to be configured by the platform where the app is running.',
+        errorUpload: 'Please upload an image to analyze.',
+        errorDefineMission: 'Please define a mission for the agent.',
+        errorReadFile: 'Failed to read file.',
+        missionMonitorFor: 'Monitor for',
+        missionRuleNotPresent: 'The rule is: {subject} should not be present.',
+        missionRuleCountExceed: 'The rule is: The count of {subject} should not exceed {value}.',
+        missionRuleOnlyBe: 'The rule is: Any {subject} detected should only be \'{value}\'.',
+        promptLangInstruction: 'Your entire response, including all text fields in the JSON, must be in English.',
+        promptSummaryDesc: 'A brief, one-sentence description of the scene.',
+        promptReasonDesc: 'A brief explanation for the mission status. If there is a violation, explain exactly what the violation is.',
+        promptDetailsDesc: 'Brief description of the object(s), especially if relevant to the mission.'
+      },
+      pt: {
+        appTitle: 'Agente de Vigilância Autônomo com IA',
+        appSubtitle: 'Configure uma missão e deixe o agente analisar a cena.',
+        analyzing: 'Agente Analisando...',
+        agentReport: 'Relatório do Agente',
+        missionStatus: 'Status da Missão:',
+        violation: 'VIOLAÇÃO',
+        ok: 'OK',
+        reason: 'Motivo:',
+        sceneSummary: 'Resumo da Cena:',
+        detectedObjects: 'Objetos Detectados:',
+        controls: 'Controles',
+        uploadHeader: '1. Carregar Imagem de Segurança',
+        missionControlCenter: '2. Centro de Controle da Missão',
+        missionBlueprints: 'Modelos de Missão',
+        perimeterSecurity: 'Segurança de Perímetro',
+        occupancyLimit: 'Limite de Ocupação',
+        assetProtection: 'Proteção de Ativos',
+        guidedBuilder: 'Construtor Guiado',
+        monitorFor: 'Monitorar por...',
+        subjectPeople: 'Pessoas',
+        subjectVehicles: 'Veículos',
+        subjectAnyObject: 'Qualquer Objeto',
+        ruleIs: 'A regra é...',
+        ruleNotPresent: 'Não deve estar presente',
+        ruleCountExceed: 'A contagem não deve exceder...',
+        ruleOnlyBe: 'Deve ser apenas...',
+        maxCount: 'Contagem Máxima',
+        description: 'Descrição',
+        descriptionPlaceholder: "ex: 'carros de serviço brancos'",
+        generatedMission: 'Missão Gerada:',
+        agentStatus: 'Status do Agente',
+        active: 'ATIVO',
+        inactive: 'INATIVO',
+        runAnalysis: 'Executar Análise do Agente',
+        analyzingBtn: 'Analisando...',
+        activateAgentTooltip: 'Ative o agente para iniciar a análise',
+        errorPrefix: 'Erro:',
+        violationLog: 'Registro de Violações da Missão',
+        noViolations: 'Nenhuma violação da missão registrada ainda.',
+        configErrorTitle: 'Erro de Configuração',
+        configErrorBody: 'A aplicação falhou ao iniciar porque a chave da API Gemini está ausente no ambiente.',
+        configErrorFooter: 'Isso precisa ser configurado pela plataforma onde a aplicação está rodando.',
+        errorUpload: 'Por favor, carregue uma imagem para analisar.',
+        errorDefineMission: 'Por favor, defina uma missão para o agente.',
+        errorReadFile: 'Falha ao ler o arquivo.',
+        missionMonitorFor: 'Monitorar por',
+        missionRuleNotPresent: 'A regra é: {subject} não deve estar presente.',
+        missionRuleCountExceed: 'A regra é: A contagem de {subject} não deve exceder {value}.',
+        missionRuleOnlyBe: 'A regra é: Qualquer {subject} detectado deve ser apenas \'{value}\'.',
+        promptLangInstruction: 'Sua resposta inteira, incluindo todos os campos de texto no JSON, deve ser em Português.',
+        promptSummaryDesc: 'Uma breve descrição da cena em uma frase.',
+        promptReasonDesc: 'Uma breve explicação para o status da missão. Se houver uma violação, explique exatamente qual é a violação.',
+        promptDetailsDesc: 'Breve descrição do(s) objeto(s), especialmente se for relevante para a missão.'
+      }
+    };
+
+    // --- GEMINI AGENT SERVICE ---
+    const agentResponseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        summary: { type: Type.STRING },
+        missionStatus: { type: Type.STRING },
+        statusReason: { type: Type.STRING },
+        detectedObjects: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              type: { type: Type.STRING },
+              count: { type: Type.NUMBER },
+              details: { type: Type.STRING },
+            },
+            required: ['type', 'count', 'details']
+          }
+        }
+      },
+      required: ['summary', 'missionStatus', 'statusReason', 'detectedObjects']
+    };
+
+    const createAgentPrompt = (mission, t) => `
+      You are an advanced, autonomous AI security agent. Your current mission is: "${mission}".
+      Analyze the provided image with your mission as the primary objective.
+      Evaluate if the scene complies with or violates your mission.
+      ${t('promptLangInstruction')}
+      Return ONLY a structured JSON response with the following structure:
+      {
+        "summary": "${t('promptSummaryDesc')}",
+        "missionStatus": "Assess mission compliance. Must be 'ok' if the mission is being followed, or 'violation' if it is being violated.",
+        "statusReason": "${t('promptReasonDesc')}",
+        "detectedObjects": [
+          {
+            "type": "Must be 'person', 'car', 'truck', or 'bicycle'.",
+            "count": "Number of objects of this type.",
+            "details": "${t('promptDetailsDesc')}"
+          }
+        ]
+      }
+      Your entire response must be ONLY the JSON object. Do not include any other text or markdown formatting.
+    `;
+
+    const runAgentAnalysis = async (base64ImageData, mimeType, mission, t) => {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const prompt = createAgentPrompt(mission, t);
+      try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: {
+                parts: [
+                    { inlineData: { data: base64ImageData, mimeType: mimeType } },
+                    { text: prompt },
+                ],
+            },
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: agentResponseSchema
+            }
+        });
+        return response.text.trim();
+      } catch (error) {
+        console.error("Error analyzing image:", error);
+        throw error instanceof Error ? error : new Error("An unknown error occurred during analysis.");
+      }
+    };
+
+    // --- REACT COMPONENTS ---
+
+    const Header = ({ t, setLanguage, language }) => (
+      <header className="text-center relative">
+        <h1 className="text-4xl font-bold text-slate-100">{t('appTitle')}</h1>
+        <p className="mt-2 text-lg text-slate-400">{t('appSubtitle')}</p>
+        <div className="absolute top-0 right-0">
+          <button onClick={() => setLanguage('en')} className={`px-3 py-1 text-sm font-semibold rounded-l-md ${language === 'en' ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300'}`}>EN</button>
+          <button onClick={() => setLanguage('pt')} className={`px-3 py-1 text-sm font-semibold rounded-r-md ${language === 'pt' ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300'}`}>PT</button>
+        </div>
+      </header>
+    );
+
+    const CameraView = ({ imageUrl, agentReport, isLoading, t }) => (
+      <div className="bg-slate-800 rounded-lg shadow-lg p-6 relative">
+        <div className="relative aspect-video bg-black rounded-md overflow-hidden border-2 border-slate-700">
+          <img src={imageUrl} alt="Security Feed" className="w-full h-full object-cover" />
+          {isLoading && (
+            <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center">
+              <div className="text-white text-center">
+                <svg className="animate-spin h-10 w-10 text-blue-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="mt-4 text-lg font-semibold">{t('analyzing')}</p>
+              </div>
+            </div>
+          )}
+        </div>
+        {agentReport && (
+          <div className="mt-4 text-slate-300">
+            <h3 className="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-2">{t('agentReport')}</h3>
+            <p><span className="font-bold text-slate-400">{t('missionStatus')}</span> <span className={`font-bold ${agentReport.missionStatus === 'violation' ? 'text-red-500' : 'text-green-500'}`}>{t(agentReport.missionStatus)}</span></p>
+            <p><span className="font-bold text-slate-400">{t('reason')}</span> {agentReport.statusReason}</p>
+            <p className="mt-2"><span className="font-bold text-slate-400">{t('sceneSummary')}</span> {agentReport.summary}</p>
+            {agentReport.detectedObjects.length > 0 && (
+               <div className="mt-2">
+                  <p className="font-bold text-slate-400">{t('detectedObjects')}</p>
+                  <ul className="list-disc list-inside pl-2">
+                      {agentReport.detectedObjects.map((obj, index) => (
+                          <li key={index}>{obj.count} {obj.type}(s) - {obj.details}</li>
+                      ))}
+                  </ul>
+               </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+
+    const Controls = ({ agentConfig, onAgentConfigChange, onFileChange, onAnalyze, isLoading, error, t }) => {
+      
+      const { missionConfig, isActive } = agentConfig;
+
+      const handleConfigChange = (field, value) => {
+        onAgentConfigChange({ ...agentConfig, missionConfig: { ...missionConfig, [field]: value }});
+      };
+      
+      const handleBlueprintSelect = (blueprint) => {
+        onAgentConfigChange({ ...agentConfig, missionConfig: blueprint });
+      };
+      
+      const missionBlueprints = {
+        perimeter: { subject: 'People', condition: 'is_not_present', value: '' },
+        occupancy: { subject: 'People', condition: 'count_not_exceed', value: '2' },
+        asset: { subject: 'Vehicles', condition: 'only_be', value: 'white service cars' }
+      };
+
+      return (
+        <div className="bg-slate-800 rounded-lg shadow-lg p-6 space-y-6">
+          <div>
+              <h2 className="text-2xl font-bold text-slate-100 border-b border-slate-700 pb-3">{t('controls')}</h2>
+              <div className="mt-6">
+                <label htmlFor="file-upload" className="block text-sm font-medium text-slate-300 mb-2">{t('uploadHeader')}</label>
+                <input id="file-upload" type="file" accept="image/*" onChange={onFileChange} className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"/>
+              </div>
+          </div>
+          
+          <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 space-y-4">
+              <h3 className="text-lg font-semibold text-slate-200">{t('missionControlCenter')}</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">{t('missionBlueprints')}</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button onClick={() => handleBlueprintSelect(missionBlueprints.perimeter)} className="text-xs bg-slate-700 hover:bg-slate-600 p-2 rounded-md">{t('perimeterSecurity')}</button>
+                  <button onClick={() => handleBlueprintSelect(missionBlueprints.occupancy)} className="text-xs bg-slate-700 hover:bg-slate-600 p-2 rounded-md">{t('occupancyLimit')}</button>
+                  <button onClick={() => handleBlueprintSelect(missionBlueprints.asset)} className="text-xs bg-slate-700 hover:bg-slate-600 p-2 rounded-md">{t('assetProtection')}</button>
+                </div>
+              </div>
+
+              <fieldset className="space-y-3">
+                <legend className="text-sm font-medium text-slate-300">{t('guidedBuilder')}</legend>
+                <div>
+                  <label htmlFor="subject" className="block text-xs text-slate-400 mb-1">{t('monitorFor')}</label>
+                  <select id="subject" value={missionConfig.subject} onChange={e => handleConfigChange('subject', e.target.value)} className="w-full bg-slate-700 text-slate-200 rounded-md border-slate-600 focus:ring-blue-500 focus:border-blue-500 text-sm p-2">
+                    <option value="People">{t('subjectPeople')}</option>
+                    <option value="Vehicles">{t('subjectVehicles')}</option>
+                    <option value="Any Object">{t('subjectAnyObject')}</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="condition" className="block text-xs text-slate-400 mb-1">{t('ruleIs')}</label>
+                  <select id="condition" value={missionConfig.condition} onChange={e => handleConfigChange('condition', e.target.value)} className="w-full bg-slate-700 text-slate-200 rounded-md border-slate-600 focus:ring-blue-500 focus:border-blue-500 text-sm p-2">
+                    <option value="is_not_present">{t('ruleNotPresent')}</option>
+                    <option value="count_not_exceed">{t('ruleCountExceed')}</option>
+                    <option value="only_be">{t('ruleOnlyBe')}</option>
+                  </select>
+                </div>
+                {missionConfig.condition === 'count_not_exceed' && (
+                  <div>
+                    <label htmlFor="value-count" className="block text-xs text-slate-400 mb-1">{t('maxCount')}</label>
+                    <input id="value-count" type="number" value={missionConfig.value} onChange={e => handleConfigChange('value', e.target.value)} className="w-full bg-slate-700 text-slate-200 rounded-md border-slate-600 focus:ring-blue-500 focus:border-blue-500 text-sm p-2"/>
+                  </div>
+                )}
+                {missionConfig.condition === 'only_be' && (
+                  <div>
+                    <label htmlFor="value-desc" className="block text-xs text-slate-400 mb-1">{t('description')}</label>
+                    <input id="value-desc" type="text" value={missionConfig.value} onChange={e => handleConfigChange('value', e.target.value)} placeholder={t('descriptionPlaceholder')} className="w-full bg-slate-700 text-slate-200 rounded-md border-slate-600 focus:ring-blue-500 focus:border-blue-500 text-sm p-2"/>
+                  </div>
+                )}
+              </fieldset>
+
+              <div className="bg-slate-800 p-3 rounded-md">
+                <p className="text-xs text-slate-400 mb-1">{t('generatedMission')}</p>
+                <p className="text-sm text-slate-200 font-medium">{agentConfig.generatedMission}</p>
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                  <span className="text-sm font-medium text-slate-300">{t('agentStatus')}</span>
+                  <button onClick={() => onAgentConfigChange({...agentConfig, isActive: !isActive})} className={`px-4 py-1 rounded-full text-xs font-bold ${isActive ? 'bg-green-500 text-white' : 'bg-slate-600 text-slate-200'}`}>
+                      {isActive ? t('active') : t('inactive')}
+                  </button>
+              </div>
+          </div>
+
+          <button 
+            onClick={onAnalyze} 
+            disabled={isLoading || !isActive} 
+            className="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
+            title={!isActive ? t('activateAgentTooltip') : ''}
+          >
+            {isLoading ? t('analyzingBtn') : t('runAnalysis')}
+          </button>
+          {error && (
+            <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mt-4" role="alert">
+              <strong className="font-bold">{t('errorPrefix')} </strong>
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const DetectionLog = ({ log, t }) => (
+      <div className="bg-slate-800 rounded-lg shadow-lg p-6">
+        <h2 className="text-2xl font-bold text-slate-100 border-b border-slate-700 pb-3 mb-4">{t('violationLog')}</h2>
+        <div className="max-h-60 overflow-y-auto pr-2">
+          {log.length === 0 ? (
+            <p className="text-slate-400">{t('noViolations')}</p>
+          ) : (
+            <ul className="space-y-3">
+              {log.map(event => (
+                <li key={event.id} className="bg-red-900/30 border border-red-800 p-3 rounded-md text-sm">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-mono text-slate-300">{event.timestamp}</span>
+                    <span className="text-red-400 font-bold text-right">{t('violation')}</span>
+                  </div>
+                  <p className="text-slate-200">{event.reason}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
+
+    // --- MAIN APP COMPONENT ---
+    const App = () => {
+      const isApiKeyMissing = !process.env.API_KEY;
+
+      const [language, setLanguage] = useState('pt'); // Default to Portuguese
+      const [imageFile, setImageFile] = useState(null);
+      const [imageUrl, setImageUrl] = useState('https://picsum.photos/seed/security/1280/720');
+      const [agentReport, setAgentReport] = useState(null);
+      const [violationLog, setViolationLog] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+      const [error, setError] = useState(null);
+      const [agentConfig, setAgentConfig] = useState({
+          missionConfig: {
+            subject: 'People',
+            condition: 'is_not_present',
+            value: ''
+          },
+          generatedMission: '',
+          isActive: true,
+      });
+      
+      const t = (key) => translations[language][key] || key;
+
+      useEffect(() => {
+        const { subject, condition, value } = agentConfig.missionConfig;
+        const translatedSubject = t(`subject${subject.replace(' ', '')}`);
+        
+        let missionText = `${t('missionMonitorFor')} ${translatedSubject}. `;
+        
+        if (condition === 'is_not_present') {
+          missionText += t('missionRuleNotPresent').replace('{subject}', translatedSubject);
+        } else if (condition === 'count_not_exceed') {
+          missionText += t('missionRuleCountExceed').replace('{subject}', translatedSubject).replace('{value}', value || '0');
+        } else if (condition === 'only_be') {
+          missionText += t('missionRuleOnlyBe').replace('{subject}', translatedSubject).replace('{value}', value || '');
+        }
+        setAgentConfig(prev => ({ ...prev, generatedMission: missionText }));
+      }, [agentConfig.missionConfig, language]);
+
+      if (isApiKeyMissing) {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4 text-white">
+              <div className="bg-slate-800 border border-red-500 p-8 rounded-lg shadow-lg max-w-md text-center">
+                  <h1 className="text-3xl font-bold text-red-400 mb-4">{t('configErrorTitle')}</h1>
+                  <p className="text-slate-300">{t('configErrorBody')}</p>
+                  <p className="mt-4 text-slate-400 text-sm">{t('configErrorFooter')}</p>
+              </div>
+          </div>
+        );
+      }
+
+      const handleFileChange = (event) => {
+        const file = event.target.files?.[0];
+        if (file) {
+          setImageFile(file);
+          const reader = new FileReader();
+          reader.onloadend = () => setImageUrl(reader.result);
+          reader.readAsDataURL(file);
+          setAgentReport(null);
+          setError(null);
+        }
+      };
+
+      const handleAnalyze = () => {
+        if (!imageFile) {
+          setError(t('errorUpload'));
+          return;
+        }
+        if (!agentConfig.generatedMission) {
+            setError(t('errorDefineMission'));
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        setAgentReport(null);
+
+        const reader = new FileReader();
+        reader.readAsDataURL(imageFile);
+        reader.onloadend = async () => {
+          try {
+            const base64Data = reader.result.split(',')[1];
+            if (!base64Data) throw new Error('Could not read image data.');
+            
+            const missionForAI = agentConfig.generatedMission;
+            const resultText = await runAgentAnalysis(base64Data, imageFile.type, missionForAI, t);
+            const parsedResult = JSON.parse(resultText);
+            setAgentReport(parsedResult);
+
+            if (parsedResult.missionStatus === 'violation') {
+              const newEvent = {
+                id: Date.now().toString(),
+                timestamp: new Date().toLocaleTimeString(),
+                reason: parsedResult.statusReason,
+              };
+              setViolationLog(prev => [newEvent, ...prev]);
+            }
+          } catch (err) {
+            setError(err.message);
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        reader.onerror = () => {
+            setError(t('errorReadFile'));
+            setIsLoading(false);
+        }
+      };
+
+      return (
+        <div className="min-h-screen font-sans p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            <Header t={t} setLanguage={setLanguage} language={language}/>
+            <main className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+              <div className="lg:col-span-2 space-y-8">
+                <CameraView imageUrl={imageUrl} agentReport={agentReport} isLoading={isLoading} t={t} />
+                <DetectionLog log={violationLog} t={t} />
+              </div>
+              <div className="lg:col-span-1">
+                <Controls 
+                  agentConfig={agentConfig}
+                  onAgentConfigChange={setAgentConfig}
+                  onFileChange={handleFileChange} 
+                  onAnalyze={handleAnalyze} 
+                  isLoading={isLoading} 
+                  error={error} 
+                  t={t}
+                />
+              </div>
+            </main>
+          </div>
+        </div>
+      );
+    };
+
+    // --- RENDER THE APP ---
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+
+  </script>
+</body>
+</html>

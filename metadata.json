@@ -1,0 +1,5 @@
+{
+  "name": "AI Security Camera Interface",
+  "description": "A web-based interface to simulate an AI-powered security camera system. Upload an image to analyze it for objects like people and cars using Gemini, mimicking a real-time surveillance feed with intelligent detection and alerting.",
+  "requestFramePermissions": []
+}
